@@ -37,11 +37,12 @@ def home():
         """<a href="/api/v1.0/stations">/api/v1.0/stations (List of stations)</a><br/>"""
         """<a href="/api/v1.0/tobs">/api/v1.0/tobs (Temperature observations for the previous year)</a><br/>"""
         """<a href="/api/v1.0/precipitation">/api/v1.0/precipitation (Precipitation for the previous year)</a><br/>"""
-        """<a href="/api/v1.0/start-end">/api/v1.0/start-end (Temperature statistics for given ious year)</a><br/>"""
-        "<form>"
-            """Start Date: <input type="text" name="FirstName" value="Mickey"><br>"""
-            """End Date: <input type="text" name="LastName" value="Mouse"><br>"""
-        "</form>"
+        """<a href="/api/v1.0/2017-01-01/2017-12-31">/api/v1.0/2017-01-01/2017-12-31 (Temperature statistics for given date range)</a><br/>"""
+        #"""<form action="/api/v1.0/start/end" target="_blank">"""
+        #    """Start Date (YYYY-MM-DD): <input type="text" name="start" value="2017-01-01"><br>"""
+        #    """End Date (YYYY-MM-DD): <input type="text" name="end" value="2017-12-31">"""
+        #    """<input type="submit" value="Submit">"""
+        #"</form>"
     )
 
 @app.route("/api/v1.0/stations")
@@ -102,13 +103,20 @@ def precipitation():
     # Return jsonified list
     return (jsonify(prcp_list))
 
-@app.route("/api/v1.0/<start>-<end>")
-def temp_stats(start, end):
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def temp_stats(start_date, end_date):
     # Function returns a json list of the minimum, average and maximum temperature for a given date range
     # Dates must be in YYYY-MM-DD format
-       
-    # Return jsonified list
-    return ("Hi")
+    
+    tobs = session.query(Measurement.tobs)\
+            .filter(Measurement.date >= start_date)\
+            .filter(Measurement.date <= end_date).all()
+    
+    # Conver results to dataframe
+    tobs_df = pd.DataFrame(tobs, columns=['tobs'])
+    
+    # Return minimum, average and maximum temperatures
+    return (tobs_df['tobs'].min(), round(tobs_df['tobs'].mean(),1), tobs_df['tobs'].max())
 
 if __name__ == "__main__":
     app.run(debug=True)
