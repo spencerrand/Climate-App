@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 import sqlalchemy
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from flask import Flask, jsonify
@@ -37,12 +37,7 @@ def home():
         """<a href="/api/v1.0/stations">/api/v1.0/stations (List of stations)</a><br/>"""
         """<a href="/api/v1.0/tobs">/api/v1.0/tobs (Temperature observations for the previous year)</a><br/>"""
         """<a href="/api/v1.0/precipitation">/api/v1.0/precipitation (Precipitation for the previous year)</a><br/>"""
-        """<a href="/api/v1.0/2017-01-01/2017-12-31">/api/v1.0/2017-01-01/2017-12-31 (Temperature statistics for given date range)</a><br/>"""
-        #"""<form action="/api/v1.0/start/end" target="_blank">"""
-        #    """Start Date (YYYY-MM-DD): <input type="text" name="start" value="2017-01-01"><br>"""
-        #    """End Date (YYYY-MM-DD): <input type="text" name="end" value="2017-12-31">"""
-        #    """<input type="submit" value="Submit">"""
-        #"</form>"
+        """<a href="/api/v1.0/2017-01-01/2017-12-31">/api/v1.0/<start_date>/<end_date> (Temperature statistics for given date range)</a><br/>"""
     )
 
 @app.route("/api/v1.0/stations")
@@ -103,20 +98,32 @@ def precipitation():
     # Return jsonified list
     return (jsonify(prcp_list))
 
+@app.route("/api/v1.0/<start_date>")
 @app.route("/api/v1.0/<start_date>/<end_date>")
-def temp_stats(start_date, end_date):
+def temp_stats(start_date, end_date=0):
     # Function returns a json list of the minimum, average and maximum temperature for a given date range
     # Dates must be in YYYY-MM-DD format
     
+    # If no end date, then make end date today's date so it is all inclusive
+    if end_date == 0:
+        end_date = dt.date.today()
+    
+    # Query database for tobs between start and end date
     tobs = session.query(Measurement.tobs)\
             .filter(Measurement.date >= start_date)\
             .filter(Measurement.date <= end_date).all()
-    
-    # Conver results to dataframe
+   
+    # Convert results to dataframe
     tobs_df = pd.DataFrame(tobs, columns=['tobs'])
     
-    # Return minimum, average and maximum temperatures
-    return (tobs_df['tobs'].min(), round(tobs_df['tobs'].mean(),1), tobs_df['tobs'].max())
+    # Append integer versions of each item (can't JSONify numpy class) into a list
+    tobs_list = []
+    tobs_list.append(np.asscalar(np.int16(tobs_df['tobs'].min())))
+    tobs_list.append(np.asscalar(np.int16(tobs_df['tobs'].mean())))
+    tobs_list.append(np.asscalar(np.int16(tobs_df['tobs'].max())))
+    
+    # Return JSONified list of minimum, average and maximum temperatures
+    return (jsonify(tobs_list, "Start Date: " + start_date, "End date: " + end_date))
 
 if __name__ == "__main__":
     app.run(debug=True)
