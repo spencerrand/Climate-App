@@ -37,7 +37,7 @@ def home():
         """<a href="/api/v1.0/stations">/api/v1.0/stations (List of stations)</a><br/>"""
         """<a href="/api/v1.0/tobs">/api/v1.0/tobs (Temperature observations for the previous year)</a><br/>"""
         """<a href="/api/v1.0/precipitation">/api/v1.0/precipitation (Precipitation for the previous year)</a><br/>"""
-        """<a href="/api/v1.0/2017-01-01/2017-12-31">/api/v1.0/<start_date>/<end_date> (Temperature statistics for given date range)</a><br/>"""
+        """<a href="/api/v1.0/2017-01-01/2017-12-31">/api/v1.0/start_date/end_date (Temperature statistics for given date range)</a><br/>"""
     )
 
 @app.route("/api/v1.0/stations")
@@ -90,10 +90,9 @@ def precipitation():
             .order_by(Measurement.date).all()
     
     # Convert object to a list
-    prcp_list=[]
-    for sublist in prcp:
-        for item in sublist:
-            prcp_list.append(item)
+    prcp_list={}
+    for item in prcp:
+        prcp_list[item[0]]=item[1]
     
     # Return jsonified list
     return (jsonify(prcp_list))
