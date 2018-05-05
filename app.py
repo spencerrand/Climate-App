@@ -122,7 +122,7 @@ def temp_stats(start_date, end_date=0):
     tobs_list.append(np.asscalar(np.int16(tobs_df['tobs'].max())))
     
     # Return JSONified list of minimum, average and maximum temperatures
-    return (jsonify(tobs_list, "Start Date: " + start_date, "End date: " + end_date))
+    return (jsonify(tobs_list))
 
 if __name__ == "__main__":
     app.run(debug=True)
